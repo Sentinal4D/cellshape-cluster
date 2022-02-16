@@ -26,7 +26,7 @@ def train(
     for epoch in range(num_epochs):
         if epoch == 0:
             print("Performing k-means to get initial cluster centres")
-            km = kmeans(model, dataloader)
+            _ = kmeans(model, dataloader)
 
         if epoch % update_interval == 0:
             print("Updating target distribution")
