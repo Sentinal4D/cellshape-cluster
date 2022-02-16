@@ -13,7 +13,9 @@ def kmeans(model, dataloader):
         inputs = inputs.to(device)
         output, features, clusters = model(inputs)
         if feature_array is not None:
-            feature_array = np.concatenate((feature_array, features.cpu().detach().numpy()), 0)
+            feature_array = np.concatenate(
+                (feature_array, features.cpu().detach().numpy()), 0
+            )
         else:
             feature_array = features.cpu().detach().numpy()
 
