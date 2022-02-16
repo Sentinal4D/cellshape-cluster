@@ -8,7 +8,9 @@ class ClusteringLayer(nn.Module):
         self.num_features = num_features
         self.num_clusters = num_clusters
         self.alpha = alpha
-        self.weight = nn.Parameter(torch.Tensor(self.num_clusters, self.num_features))
+        self.weight = nn.Parameter(
+            torch.Tensor(self.num_clusters, self.num_features)
+        )
         self.weight = nn.init.xavier_uniform_(self.weight)
 
     def forward(self, x):
@@ -23,7 +25,7 @@ class ClusteringLayer(nn.Module):
         return x
 
     def extra_repr(self):
-        return 'in_features={}, out_features={}, alpha={}'.format(
+        return "in_features={}, out_features={}, alpha={}".format(
             self.num_features, self.num_clusters, self.alpha
         )
 
