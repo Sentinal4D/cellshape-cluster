@@ -30,24 +30,28 @@ def train(
 
     # initialise target distribution
     print("Initialising target distribution")
-    cluster_distribution, previous_cluster_predictions = get_distributions(model, dataloader_inf)
-    target_distribution = get_target_distribution(
-        cluster_distribution
+    cluster_distribution, previous_cluster_predictions = get_distributions(
+        model, dataloader_inf
     )
+    target_distribution = get_target_distribution(cluster_distribution)
 
     for epoch in range(num_epochs):
 
         if (epoch % update_interval == 0) and (epoch != 0):
             print("Updating target distribution")
-            cluster_distribution, cluster_predictions = get_distributions(model, dataloader_inf)
-            target_distribution = get_target_distribution(
-                cluster_distribution
+            cluster_distribution, cluster_predictions = get_distributions(
+                model, dataloader_inf
             )
-            delta_label, previous_cluster_predictions = check_tolerance(cluster_predictions,
-                                                                        previous_cluster_predictions)
+            target_distribution = get_target_distribution(cluster_distribution)
+            delta_label, previous_cluster_predictions = check_tolerance(
+                cluster_predictions, previous_cluster_predictions
+            )
             if delta_label < divergence_tolerance:
-                print(f'Label divergence {delta_label} < divergence tolerance {divergence_tolerance}')
-                print('Reached tolerance threshold. Stopping training.')
+                print(
+                    f"Label divergence {delta_label} < "
+                    f"divergence tolerance {divergence_tolerance}"
+                )
+                print("Reached tolerance threshold. Stopping training.")
                 break
 
         print(f"Training epoch {epoch}")
