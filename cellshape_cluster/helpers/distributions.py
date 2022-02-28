@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 
-def get_target_distribution(out_distr, q_pow):
+def get_target_distribution(out_distr):
     tar_dist = out_distr**2 / np.sum(out_distr, axis=0)
     tar_dist = np.transpose(np.transpose(tar_dist) / np.sum(tar_dist, axis=1))
     return tar_dist

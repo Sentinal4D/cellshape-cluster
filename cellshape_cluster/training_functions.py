@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 from .helpers.distributions import get_distributions, get_target_distribution
 from .helpers.kmeans import kmeans
+from .helpers.check_tolerance import check_tolerance
 
 
 def train(
@@ -15,7 +16,7 @@ def train(
     cluster_criterion,
     update_interval,
     gamma,
-    q_pow,
+    divergence_tolerance,
     save_to,
 ):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -23,17 +24,32 @@ def train(
     model.train()
     best_loss = 1000000000
 
-    for epoch in range(num_epochs):
-        if epoch == 0:
-            print("Performing k-means to get initial cluster centres")
-            _ = kmeans(model, dataloader)
+    # initialise cluster centres with k-means
+    print("Performing k-means to get initial cluster centres")
+    _ = kmeans(model, dataloader)
 
-        if epoch % update_interval == 0:
+    # initialise target distribution
+    print("Initialising target distribution")
+    cluster_distribution, previous_cluster_predictions = get_distributions(model, dataloader_inf)
+    target_distribution = get_target_distribution(
+        cluster_distribution
+    )
+
+    for epoch in range(num_epochs):
+
+        if (epoch % update_interval == 0) and (epoch != 0):
             print("Updating target distribution")
-            cluster_distribution, _ = get_distributions(model, dataloader_inf)
+            cluster_distribution, cluster_predictions = get_distributions(model, dataloader_inf)
             target_distribution = get_target_distribution(
-                cluster_distribution, q_pow
+                cluster_distribution
             )
+            delta_label, previous_cluster_predictions = check_tolerance(cluster_predictions,
+                                                                        previous_cluster_predictions)
+            if delta_label < divergence_tolerance:
+                print(f'Label divergence {delta_label} < divergence tolerance {divergence_tolerance}')
+                print('Reached tolerance threshold. Stopping training.')
+                break
+
         print(f"Training epoch {epoch}")
         batch_num = 1
         running_loss = 0.0
@@ -91,3 +107,5 @@ def train(
                 }
                 best_loss = total_loss
                 torch.save(checkpoint, save_to + ".pt")
+
+    torch.save(checkpoint, save_to + ".pt")
