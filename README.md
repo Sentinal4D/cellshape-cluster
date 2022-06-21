@@ -3,12 +3,42 @@ ___
 Cellshape-cluster is an easy-to-use tool to analyse the cluster cells by their shape using deep learning and, in particular, deep-embedded-clustering. The tool provides the ability to train popular graph-based or convolutional autoencoders on point cloud or voxel data of 3D single cell masks as well as providing pre-trained networks for inference.
 
 
-### To install
+## To install
 ```bash
 pip install cellshape-cluster
 ```
 
-### For developers
+## Usage
+```python
+import torch
+from cellshape_cloud import CloudAutoEncoder
+from cellshape_cluster import DeepEmbeddedClustering
+
+autoencoder = CloudAutoEncoder(
+    num_features=128, 
+    k=20, 
+    encoder_type="dgcnn"
+)
+
+model = DeepEmbeddedClustering(autoencoder, 10)
+
+points = torch.randn(1, 2048, 3)
+
+recon, features, clusters = model(points)
+```
+
+## Parameters
+
+- `num_features`: int.  
+The size of the latent space of the autoencoder. If you have rectangular images, make sure your image size is the maximum of the width and height
+- `k`: int.  
+The number of neightbours to use in the k-nearest-neighbours graph construction.
+- `encoder_type`: int.  
+The type of encoder: 'foldingnet' or 'dgcnn'
+- `decoder_type`: int.  
+The type of decoder: 'foldingnet' or 'dgcnn'
+
+## For developers
 * Fork the repository
 * Clone your fork
 ```bash
