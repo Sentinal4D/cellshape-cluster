@@ -20,7 +20,9 @@ autoencoder = CloudAutoEncoder(
     encoder_type="dgcnn"
 )
 
-model = DeepEmbeddedClustering(autoencoder, 10)
+model = DeepEmbeddedClustering(autoencoder=autoencoder, 
+                               num_clusters=10,
+                               alpha=1.0)
 
 points = torch.randn(1, 2048, 3)
 
@@ -29,14 +31,12 @@ recon, features, clusters = model(points)
 
 ## Parameters
 
-- `num_features`: int.  
-The size of the latent space of the autoencoder. If you have rectangular images, make sure your image size is the maximum of the width and height
-- `k`: int.  
-The number of neightbours to use in the k-nearest-neighbours graph construction.
-- `encoder_type`: int.  
-The type of encoder: 'foldingnet' or 'dgcnn'
-- `decoder_type`: int.  
-The type of decoder: 'foldingnet' or 'dgcnn'
+- `autoencoder`: CloudAutoEncoder or VoxelAutoEncoder.  
+Instance of autoencoder class from cellshape-cloud or cellshape-voxel
+- `num_clusters`: int.  
+The number of clusters to use in deep embedded clustering algorithm.
+- `alpha`: float.  
+Degrees of freedom for the Student's t-distribution. Xie et al. (ICML, 2016) let alpha=1 for all experiments.
 
 ## For developers
 * Fork the repository
