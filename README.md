@@ -1,3 +1,6 @@
+[![Project Status: Active – The project has reached a stable, usable
+state and is being actively
+developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Python Version](https://img.shields.io/pypi/pyversions/cellshape-cluster.svg)](https://pypi.org/project/cellshape-cluster)
 [![PyPI](https://img.shields.io/pypi/v/cellshape-cluster.svg)](https://pypi.org/project/cellshape-cluster)
 [![Downloads](https://pepy.tech/badge/cellshape-cluster)](https://pepy.tech/project/cellshape-cluster)
