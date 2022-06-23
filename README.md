@@ -1,3 +1,13 @@
+[![Python Version](https://img.shields.io/pypi/pyversions/cellshape-cluster.svg)](https://pypi.org/project/cellshape-cluster)
+[![PyPI](https://img.shields.io/pypi/v/cellshape-cluster.svg)](https://pypi.org/project/cellshape-cluster)
+[![Downloads](https://pepy.tech/badge/cellshape-cluster)](https://pepy.tech/project/cellshape-cluster)
+[![Wheel](https://img.shields.io/pypi/wheel/cellshape-cluster.svg)](https://pypi.org/project/cellshape-cluster)
+[![Development Status](https://img.shields.io/pypi/status/cellshape-cluster.svg)](https://github.com/Sentinal4D/cellshape-cluster)
+[![Tests](https://img.shields.io/github/workflow/status/Sentinal4D/cellshape-cluster/tests)](
+    https://github.com/Sentinal4D/cellshape-cluster/actions)
+[![Coverage Status](https://coveralls.io/repos/github/Sentinal4D/cellshape-cluster/badge.svg?branch=master)](https://coveralls.io/github/Sentinal4D/cellshape-cluster?branch=master)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 # cellshape-cluster
 ___
 Cellshape-cluster is an easy-to-use tool to analyse the cluster cells by their shape using deep learning and, in particular, deep-embedded-clustering. The tool provides the ability to train popular graph-based or convolutional autoencoders on point cloud or voxel data of 3D single cell masks as well as providing pre-trained networks for inference.
