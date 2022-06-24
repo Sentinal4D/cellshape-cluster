@@ -22,6 +22,7 @@ pip install cellshape-cluster
 ```
 
 ## Usage
+### Basic usage:
 ```python
 import torch
 from cellshape_cloud import CloudAutoEncoder
@@ -40,6 +41,72 @@ model = DeepEmbeddedClustering(autoencoder=autoencoder,
 points = torch.randn(1, 2048, 3)
 
 recon, features, clusters = model(points)
+```
+
+### To load a trained graph-based autoencoder and perform deep embedded clustering: 
+```python
+import torch
+from torch.utils.data import DataLoader
+
+import cellshape_cloud as cloud
+import cellshape_cluster as cluster
+from cellshape_cloud.vendor.chamfer_distance import ChamferDistance
+
+dataset_dir = "path/to/pointcloud/dataset/"
+autoencoder_model = "path/to/autoencoder/model.pt"
+num_features = 128
+k = 20
+encoder_type = "dgcnn"
+num_clusters = 10
+num_epochs = 1
+learning_rate = 0.00001
+gamma = 1
+divergence_tolerance = 0.01
+output_dir = "path/to/output/
+
+
+autoencoder = CloudAutoEncoder(
+    num_features=128, 
+    k=20, 
+    encoder_type="dgcnn"
+)
+
+checkpoint = torch.load(autoencoder_model)
+
+autoencoder.load_state_dict(checkpoint['model_state_dict']
+
+model = DeepEmbeddedClustering(autoencoder=autoencoder, 
+                               num_clusters=10,
+                               alpha=1.0)
+
+dataset = cloud.PointCloudDataset(dataset_dir)
+
+dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False) # it is very important that shuffle=False here!
+dataloader_inf = DataLoader(dataset, batch_size=1, shuffle=False) # it is very important that batch_size=1 and shuffle=False here!
+
+optimizer = torch.optim.Adam(
+    model.parameters(),
+    lr=learning_rate * 16 / batch_size,
+    betas=(0.9, 0.999),
+    weight_decay=1e-6,
+)
+
+reconstruction_criterion = ChamferDistance()
+cluster_criterion = nn.KLDivLoss(reduction="sum")
+
+train(
+    model,
+    dataloader,
+    dataloader_inf,
+    num_epochs,
+    optimizer,
+    reconstruction_criterion,
+    cluster_criterion,
+    update_interval,
+    gamma,
+    divergence_tolerance,
+    output_dir
+)
 ```
 
 ## Parameters
