@@ -62,7 +62,7 @@ num_epochs = 1
 learning_rate = 0.00001
 gamma = 1
 divergence_tolerance = 0.01
-output_dir = "path/to/output/
+output_dir = "path/to/output/"
 
 
 autoencoder = CloudAutoEncoder(
