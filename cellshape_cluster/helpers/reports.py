@@ -6,7 +6,8 @@ def get_model_name(model):
     encoder_type = model.encoder_type
     decoder_type = model.decoder_type
     num_features = model.encoder.num_features
-    model_name = f"{encoder_type}_{decoder_type}_{num_features}"
+    num_clusters = model.num_clusters
+    model_name = f"{encoder_type}_{decoder_type}_{num_features}_{num_clusters}"
     return model_name
 
 

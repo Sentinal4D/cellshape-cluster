@@ -1,5 +1,7 @@
 import torch
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import logging
 
 from .helpers.distributions import get_distributions, get_target_distribution
 from .helpers.kmeans import kmeans
@@ -17,19 +19,23 @@ def train(
     update_interval,
     gamma,
     divergence_tolerance,
-    save_to,
+    logging_info,
 ):
+
+    name_logging, name_model, name_writer, name = logging_info
+    writer = SummaryWriter(log_dir=name_writer)
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.train()
-    best_loss = 1000000000
-
+    best_loss = float("inf")
+    niter = 1
     # initialise cluster centres with k-means
-    print("Performing k-means to get initial cluster centres")
+    logging.info("Performing k-means to get initial cluster centres")
     _ = kmeans(model, dataloader)
 
     # initialise target distribution
-    print("Initialising target distribution")
+    logging.info("Initialising target distribution")
     cluster_distribution, previous_cluster_predictions = get_distributions(
         model, dataloader_inf
     )
@@ -38,7 +44,7 @@ def train(
     for epoch in range(num_epochs):
 
         if (epoch % update_interval == 0) and (epoch != 0):
-            print("Updating target distribution")
+            logging.info("Updating target distribution")
             cluster_distribution, cluster_predictions = get_distributions(
                 model, dataloader_inf
             )
@@ -46,15 +52,22 @@ def train(
             delta_label, previous_cluster_predictions = check_tolerance(
                 cluster_predictions, previous_cluster_predictions
             )
+            logging.info(f"Delta label == {delta_label}")
             if delta_label < divergence_tolerance:
-                print(
+                logging.info(
                     f"Label divergence {delta_label} < "
                     f"divergence tolerance {divergence_tolerance}"
                 )
                 print("Reached tolerance threshold. Stopping training.")
+                logging.info(
+                    f"Label divergence {delta_label} < "
+                    f"divergence tolerance {divergence_tolerance}"
+                    f"Reached tolerance threshold. Stopping training."
+                )
                 break
 
         print(f"Training epoch {epoch}")
+        logging.info(f"Training epoch {epoch}")
         batch_num = 1
         running_loss = 0.0
 
@@ -92,7 +105,12 @@ def train(
                     loss.backward()
                     optimizer.step()
 
-                running_loss += loss.detach().item() / batch_size
+                batch_loss = loss.detach().item() / batch_size
+                batch_loss_rec = (
+                    reconstruction_loss.detach().item() / batch_size
+                )
+                batch_loss_cluster = cluster_loss.detach().item() / batch_size
+                running_loss += batch_loss
                 batch_num += 1
                 tepoch.set_postfix(
                     loss=loss.detach().item() / batch_size,
@@ -100,6 +118,18 @@ def train(
                     / batch_size,
                     cluster_loss=cluster_loss.item() / batch_size,
                 )
+                writer.add_scalar("/Loss", batch_loss, niter)
+                niter += 1
+                tepoch.set_postfix(loss=batch_loss)
+
+                if batch_num % 10 == 0:
+                    logging.info(
+                        f"[{epoch}/{num_epochs}]"
+                        f"[{batch_num}/{len(dataloader)}]"
+                        f"LossTot: {batch_loss}"
+                        f"LossRec: {batch_loss_rec}"
+                        f"LossCluster: {batch_loss_cluster}"
+                    )
 
             total_loss = running_loss / len(dataloader)
             if total_loss < best_loss:
@@ -110,6 +140,7 @@ def train(
                     "loss": total_loss,
                 }
                 best_loss = total_loss
-                torch.save(checkpoint, save_to + ".pt")
-
-    torch.save(checkpoint, save_to + ".pt")
+                torch.save(checkpoint, name_model + ".pt")
+                logging.info(
+                    f"Saving model to {name_model} with loss = {best_loss}."
+                )
