@@ -19,7 +19,7 @@ requirements = [
 
 setup(
     name="cellshape-cluster",
-    version="0.0.7",
+    version="0.0.7-rc0",
     description="3D shape analysis using deep learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -27,6 +27,7 @@ setup(
     extras_require={
         "dev": [
             "black",
+            "black[jupyter]",
             "pytest-cov",
             "pytest",
             "gitpython",

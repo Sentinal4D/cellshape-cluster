@@ -15,8 +15,14 @@ from cellshape_cluster.deep_embedded_clustering import DeepEmbeddedClustering
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Cellshape-cloud")
     parser.add_argument(
+        "--cloud_convert",
+        default=False,
+        type=bool,
+        help="Do you need to convert 3D images to point clouds?",
+    )
+    parser.add_argument(
         "--dataset_path",
-        default="./datasets/",
+        default="/home/mvries/Documents/CellShape/DatasetForTesting/",
         type=str,
         help="Please provide the path to the "
         "dataset of 3D images or point clouds",
@@ -29,14 +35,14 @@ if __name__ == "__main__":
         "containing information on the dataset.",
     )
     parser.add_argument(
-        "--output_path",
-        default="./",
+        "--output_dir",
+        default="/home/mvries/Documents/Testing_output/",
         type=str,
         help="Please provide the path for where to save output.",
     )
     parser.add_argument(
         "--num_epochs",
-        default=250,
+        default=3,
         type=int,
         help="Provide the number of epochs for the " "autoencoder training.",
     )
@@ -75,6 +81,30 @@ if __name__ == "__main__":
         help="Please provide the batch size.",
     )
     parser.add_argument(
+        "--update_interval",
+        default=1,
+        type=int,
+        help="Please provide the update interval.",
+    )
+    parser.add_argument(
+        "--gamma",
+        default=1,
+        type=int,
+        help="Please provide the value for gamma.",
+    )
+    parser.add_argument(
+        "--alpha",
+        default=1.0,
+        type=float,
+        help="Please provide the value for alpha.",
+    )
+    parser.add_argument(
+        "--divergence_tolerance",
+        default=0.01,
+        type=float,
+        help="Please provide the divergence tolerance.",
+    )
+    parser.add_argument(
         "--proximal",
         default=0,
         type=int,
@@ -83,9 +113,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--autoencoder_path",
-        default="/run/user/1128299809/gvfs/smb-share:server=rds.icr.ac.uk,"
-        "share=data/DBI/DUDBI/DYNCESYS/mvries/ResultsAlma/TearingNetNew/"
-        "nets/dgcnn_foldingnet_128_008.pt",
+        default="/home/mvries/Documents/Testing_output/nets/"
+        "dgcnn_foldingnetbasic_128_pretrained_005.pt",
         type=str,
         help="Please provide the path to a pretrained autoencoder.",
     )
@@ -93,20 +122,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.cloud_convert:
         print("Converting tif to point cloud using cellshape-helper")
-    params = {
-        "pretrained_path": args.pretrained_path,
-        "dataframe_path": args.dataframe_path,
-        "dataset_path": args.dataset_path,
-        "output_path": args.output_path,
-        "num_epochs_autoencoder": args.num_epochs,
-        "num_features": args.num_features,
-        "k": args.k,
-        "encoder_type": args.encoder_type,
-        "decoder_type": args.decoder_type,
-        "learning_rate": args.learning_rate,
-        "batch_size": args.batch_size,
-        "autoencoder_path": args.autoencoder_path,
-    }
 
     autoencoder = cscloud.CloudAutoEncoder(
         num_features=args.num_features,
@@ -115,13 +130,25 @@ if __name__ == "__main__":
         decoder_type=args.decoder_type,
     )
 
-    checkpoint = torch.load(args.autoencoder_path)
+    try:
+        checkpoint = torch.load(args.autoencoder_path)
+    except FileNotFoundError:
+        print(
+            "This model doesn't exist. "
+            "Please check the provided path and try again."
+        )
+        checkpoint = {"model_state_dict": None}
 
-    autoencoder.load_state_dict(checkpoint["model_state_dict"])
+    try:
+        autoencoder.load_state_dict(checkpoint["model_state_dict"])
+        print(f"The loss of the loaded model is {checkpoint['loss']}")
+    except RuntimeError:
+        print("The model architecture given doesn't match the one provided.")
+        print("Training from scratch.")
+    except AttributeError:
+        print("Training from scratch.")
 
-    model = DeepEmbeddedClustering(
-        autoencoder=autoencoder, num_clusters=10, alpha=1.0
-    )
+    model = DeepEmbeddedClustering(autoencoder=autoencoder, num_clusters=10)
 
     dataset = cscloud.PointCloudDataset(args.dataset_path)
 
@@ -148,6 +175,11 @@ if __name__ == "__main__":
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     logging.basicConfig(filename=name_logging, level=logging.INFO)
     logging.info(f"Started training model {name} at {now}.")
+    logging.info(f"Loading autoencoder from {args.autoencoder_path}")
+    print(
+        f"Loading autoencoder from {args.autoencoder_path} "
+        f"with loss {checkpoint['loss']}"
+    )
 
     cscluster.train(
         model=model,

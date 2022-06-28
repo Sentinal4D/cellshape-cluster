@@ -13,7 +13,7 @@ def get_distributions(model, dataloader):
     cluster_distribution = None
     model.eval()
     for data in dataloader:
-        inputs = data
+        inputs = data[0]
         inputs = inputs.to(device)
         outputs, features, clusters = model(inputs)
         if cluster_distribution is not None:

@@ -32,10 +32,12 @@ def train(
     niter = 1
     # initialise cluster centres with k-means
     logging.info("Performing k-means to get initial cluster centres")
+    print("Performing k-means to get initial cluster centres")
     _ = kmeans(model, dataloader)
 
     # initialise target distribution
     logging.info("Initialising target distribution")
+    print("Initialising target distribution")
     cluster_distribution, previous_cluster_predictions = get_distributions(
         model, dataloader_inf
     )
@@ -70,13 +72,15 @@ def train(
         logging.info(f"Training epoch {epoch}")
         batch_num = 1
         running_loss = 0.0
+        running_loss_rec = 0.0
+        running_loss_cluster = 0.0
 
         model.train()
         with tqdm(dataloader, unit="batch") as tepoch:
             for data in tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
 
-                inputs = data
+                inputs = data[0]
                 inputs = inputs.to(device)
                 batch_size = inputs.shape[0]
                 tar_dist = torch.from_numpy(
@@ -98,9 +102,7 @@ def train(
                     cluster_loss = cluster_criterion(
                         torch.log(clusters), tar_dist
                     )
-                    loss = ((1 - gamma) * reconstruction_loss) + (
-                        gamma * cluster_loss
-                    )
+                    loss = reconstruction_loss + (gamma * cluster_loss)
                     # ===================backward====================
                     loss.backward()
                     optimizer.step()
@@ -110,17 +112,19 @@ def train(
                     reconstruction_loss.detach().item() / batch_size
                 )
                 batch_loss_cluster = cluster_loss.detach().item() / batch_size
+
                 running_loss += batch_loss
+                running_loss_rec += batch_loss_rec
+                running_loss_cluster += batch_loss_cluster
                 batch_num += 1
                 tepoch.set_postfix(
-                    loss=loss.detach().item() / batch_size,
+                    total_loss=loss.detach().item() / batch_size,
                     reconstruction_loss=reconstruction_loss.item()
                     / batch_size,
                     cluster_loss=cluster_loss.item() / batch_size,
                 )
                 writer.add_scalar("/Loss", batch_loss, niter)
                 niter += 1
-                tepoch.set_postfix(loss=batch_loss)
 
                 if batch_num % 10 == 0:
                     logging.info(

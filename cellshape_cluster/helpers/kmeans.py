@@ -9,7 +9,7 @@ def kmeans(model, dataloader):
     feature_array = None
     model.eval()
     for data in dataloader:
-        inputs = data
+        inputs = data[0]
         inputs = inputs.to(device)
         output, features, clusters = model(inputs)
         if feature_array is not None:
