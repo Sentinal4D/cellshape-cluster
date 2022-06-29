@@ -118,10 +118,9 @@ def train(
                 running_loss_cluster += batch_loss_cluster
                 batch_num += 1
                 tepoch.set_postfix(
-                    total_loss=loss.detach().item() / batch_size,
-                    reconstruction_loss=reconstruction_loss.item()
-                    / batch_size,
-                    cluster_loss=cluster_loss.item() / batch_size,
+                    tot_loss=loss.detach().item() / batch_size,
+                    rec_loss=reconstruction_loss.item() / batch_size,
+                    clu_loss=cluster_loss.item() / batch_size,
                 )
                 writer.add_scalar("/Loss", batch_loss, niter)
                 niter += 1
