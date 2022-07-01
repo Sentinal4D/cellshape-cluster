@@ -7,9 +7,10 @@ import logging
 import cellshape_cloud as cscloud
 from cellshape_cloud.vendor.chamfer_distance import ChamferLoss
 
-import cellshape_cluster as cscluster
-from cellshape_cluster.helpers.reports import get_experiment_name
-from cellshape_cluster.deep_embedded_clustering import DeepEmbeddedClustering
+
+from helpers.reports import get_experiment_name
+from deep_embedded_clustering import DeepEmbeddedClustering
+from training_functions import train
 
 
 if __name__ == "__main__":
@@ -181,7 +182,7 @@ if __name__ == "__main__":
         f"with loss {checkpoint['loss']}"
     )
 
-    cscluster.train(
+    train(
         model=model,
         dataloader=dataloader,
         dataloader_inf=dataloader_inf,
