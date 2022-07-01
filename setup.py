@@ -9,7 +9,7 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 requirements = [
     "torch",
     "torchvision",
-    "numpy=1.22",
+    "numpy==1.22",
     "cellshape-cloud",
     "cellshape-voxel",
     "tqdm",
