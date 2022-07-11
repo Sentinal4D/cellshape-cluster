@@ -13,24 +13,85 @@ from deep_embedded_clustering import DeepEmbeddedClustering
 from training_functions import train
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Cellshape-cloud")
     parser.add_argument(
+        "--model_type",
+        default="cloud",
+        type=str,
+        choices=["cloud", "voxel"],
+        help="Please provide the type of model: [cloud, voxel]",
+    )
+    parser.add_argument(
         "--cloud_convert",
-        default=False,
-        type=bool,
+        default="False",
+        type=str2bool,
         help="Do you need to convert 3D images to point clouds?",
     )
     parser.add_argument(
-        "--dataset_path",
-        default="/home/mvries/Documents/CellShape/DatasetForTesting/",
+        "--num_points",
+        default=2048,
+        type=int,
+        help="The number of points used in each point cloud.",
+    )
+    parser.add_argument(
+        "--train_type",
+        default="DEC",
         type=str,
-        help="Please provide the path to the "
-        "dataset of 3D images or point clouds",
+        choices=["pretrain", "DEC"],
+        help="Please provide the type of training mode: [pretrain, full]",
+    )
+    parser.add_argument(
+        "--pretrain",
+        default="False",
+        type=str2bool,
+        help="Please provide whether or not to pretrain the autoencoder",
+    )
+    parser.add_argument(
+        "--tif_dataset_path",
+        default="/home/mvries/Documents/CellShape/"
+        "UploadData/Dataset/TestConvert/TestTiff/",
+        type=str,
+        help="Please provide the path to the " "dataset of 3D tif images",
+    )
+    parser.add_argument(
+        "--mesh_dataset_path",
+        default="/home/mvries/Documents/CellShape/"
+        "UploadData/Dataset/TestConvert/TestMesh/",
+        type=str,
+        help="Please provide the path to the " "dataset of 3D meshes.",
+    )
+    parser.add_argument(
+        "--cloud_dataset_path",
+        default="/home/mvries/Documents/CellShape/"
+        "UploadData/cellshapeData/",
+        type=str,
+        help="Please provide the path to the " "dataset of the point clouds.",
+    )
+    parser.add_argument(
+        "--dataset_type",
+        default="SingleCell",
+        type=str,
+        choices=["SingleCell", "Other"],
+        help="Please provide the type of dataset. "
+        "If using the one from our paper, then choose 'SingleCell', "
+        "otherwise, choose 'Other'.",
     )
     parser.add_argument(
         "--dataframe_path",
-        default="./dataframe/",
+        default="/home/mvries/Documents/CellShape/UploadData/"
+        "cellshapeData/all_data_removedwrong_ori.csv",
         type=str,
         help="Please provide the path to the dataframe "
         "containing information on the dataset.",
@@ -42,16 +103,28 @@ if __name__ == "__main__":
         help="Please provide the path for where to save output.",
     )
     parser.add_argument(
-        "--num_epochs",
+        "--num_epochs_autoencoder",
+        default=1,
+        type=int,
+        help="Provide the number of epochs for the autoencoder training.",
+    )
+    parser.add_argument(
+        "--num_epochs_clustering",
         default=3,
         type=int,
-        help="Provide the number of epochs for the " "autoencoder training.",
+        help="Provide the number of epochs for the autoencoder training.",
     )
     parser.add_argument(
         "--num_features",
         default=128,
         type=int,
-        help="Please provide the number of " "features to extract.",
+        help="Please provide the number of features to extract.",
+    )
+    parser.add_argument(
+        "--num_clusters",
+        default=3,
+        type=int,
+        help="Please provide the number of clusters to find.",
     )
     parser.add_argument(
         "--k", default=20, type=int, help="Please provide the value for k."
@@ -69,7 +142,14 @@ if __name__ == "__main__":
         help="Please provide the type of decoder.",
     )
     parser.add_argument(
-        "--learning_rate",
+        "--learning_rate_autoencoder",
+        default=0.0001,
+        type=float,
+        help="Please provide the learning rate "
+        "for the autoencoder training.",
+    )
+    parser.add_argument(
+        "--learning_rate_clustering",
         default=0.00001,
         type=float,
         help="Please provide the learning rate "
@@ -85,7 +165,8 @@ if __name__ == "__main__":
         "--update_interval",
         default=1,
         type=int,
-        help="Please provide the update interval.",
+        help="How often to update the target "
+        "distribution for the kl divergence.",
     )
     parser.add_argument(
         "--gamma",
@@ -107,15 +188,15 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--proximal",
-        default=0,
+        default=2,
         type=int,
-        help="Please provide the value of proximality "
+        help="Do you want to look at cells distal "
+        "or proximal to the coverslip?"
         "[0 = distal, 1 = proximal, 2 = both].",
     )
     parser.add_argument(
-        "--autoencoder_path",
-        default="/home/mvries/Documents/Testing_output/nets/"
-        "dgcnn_foldingnetbasic_128_pretrained_005.pt",
+        "--pretrained_path",
+        default=None,
         type=str,
         help="Please provide the path to a pretrained autoencoder.",
     )
