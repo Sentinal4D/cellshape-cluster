@@ -3,9 +3,9 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import logging
 
-from .helpers.distributions import get_distributions, get_target_distribution
-from .helpers.kmeans import kmeans
-from .helpers.check_tolerance import check_tolerance
+from distributions import get_distributions, get_target_distribution
+from kmeans import kmeans
+from check_tolerance import check_tolerance
 
 
 def train(

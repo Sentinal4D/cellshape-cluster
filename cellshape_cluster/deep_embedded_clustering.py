@@ -1,5 +1,5 @@
 from torch import nn
-from .clustering_layer import ClusteringLayer
+from clustering_layer import ClusteringLayer
 
 
 class DeepEmbeddedClustering(nn.Module):

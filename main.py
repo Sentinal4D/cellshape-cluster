@@ -8,9 +8,9 @@ import cellshape_cloud as cscloud
 from cellshape_cloud.vendor.chamfer_distance import ChamferLoss
 
 
-from .helpers.reports import get_experiment_name
-from .deep_embedded_clustering import DeepEmbeddedClustering
-from .training_functions import train
+from reports import get_experiment_name
+from deep_embedded_clustering import DeepEmbeddedClustering
+from training_functions import train
 
 
 def str2bool(v):
