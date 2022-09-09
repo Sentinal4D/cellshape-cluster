@@ -114,7 +114,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         p = numerator.t() / np.sum(numerator, axis=1)
         return p
 
-    def _get_distributions(self, model, dataloader):
+    def _get_distributions(self, dataloader):
 
         cluster_distribution = None
         self.autoencoder.model.encoder.eval()
@@ -144,7 +144,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
             (
                 cluster_distribution,
                 previous_cluster_predictions,
-            ) = self._get_distributions(self.model, self.val_dataloader())
+            ) = self._get_distributions(self.val_dataloader())
             target_distribution = self._get_target_distribution(
                 cluster_distribution
             )
