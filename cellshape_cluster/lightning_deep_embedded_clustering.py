@@ -141,7 +141,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
             self.current_epoch % self.args.update_interval == 0
         ):
             print("Initialising centroids.")
-            # self._initialise_centroid()
+            self._initialise_centroid()
             print("Initialising target distribution.")
             (
                 cluster_distribution,
