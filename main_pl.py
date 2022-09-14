@@ -1,7 +1,7 @@
 import argparse
 import pytorch_lightning as pl
+import torch
 from pytorch_lightning.callbacks import ModelCheckpoint
-
 
 from cellshape_cloud.lightning_autoencoder import CloudAutoEncoderPL
 from cellshape_cloud.pointcloud_dataset import (
@@ -15,6 +15,56 @@ from cellshape_cluster.lightning_deep_embedded_clustering import (
     DeepEmbeddedClusteringPL,
 )
 import os
+import umap
+from sklearn.preprocessing import StandardScaler
+import seaborn as sns
+import numpy as np
+import pandas as pd
+from torch import Tensor
+
+
+def make_umap(pl_module, trainer):
+    print("Creating UMAP figure.")
+    feature_array = pl_module._extract_features()
+    scalar = StandardScaler()
+    scaled_features = scalar.fit_transform(feature_array)
+
+    reducer = umap.UMAP(random_state=42)
+    embedding = reducer.fit_transform(scaled_features)
+
+    b = np.zeros((len(embedding), 2))
+    b[:, 0] = embedding[:, 0]
+    b[:, 1] = embedding[:, 1]
+
+    data = pd.DataFrame(b, columns=["Umap1", "Umap2"])
+
+    facet = sns.lmplot(
+        data=data,
+        x="Umap1",
+        y="Umap2",
+        fit_reg=False,
+        legend=True,
+        scatter_kws={"s": 6},
+    )
+    fig = facet.figure
+    tensorboard = pl_module.logger.experiment
+
+    callback_step = trainer.callback_metrics.get("step")
+    step = (
+        callback_step.int()
+        if isinstance(callback_step, Tensor)
+        else torch.tensor(trainer.global_step)
+    )
+    tensorboard.add_figure("UMAP", fig, step)
+    print("Done creating UMAP figure.")
+
+
+class UmapCallback(pl.callbacks.Callback):
+    def on_train_start(self, trainer, pl_module):
+        make_umap(pl_module, trainer)
+
+    def on_save_checkpoint(self, trainer, pl_module, checkpoint):
+        make_umap(pl_module, trainer)
 
 
 def train_dec_pl(args):
@@ -83,15 +133,15 @@ def train_dec_pl(args):
     )
 
     checkpoint_callback = ModelCheckpoint(save_top_k=1, monitor="loss")
+    umap_callback = UmapCallback()
 
     trainer = pl.Trainer(
         accelerator="gpu",
         devices=args.gpus,
         max_epochs=args.num_epochs_clustering,
         default_root_dir=new_output + logging_info[3],
-        callbacks=[checkpoint_callback],
+        callbacks=[checkpoint_callback, umap_callback],
         # strategy="ddp_find_unused_parameters_false",
-        log_every_n_steps=1,
     )
 
     trainer.fit(model)
@@ -253,7 +303,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--gamma",
-        default=1,
+        default=100,
         type=int,
         help="Please provide the value for gamma.",
     )

@@ -98,26 +98,14 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         return out
 
     def _initialise_centroid(self):
-        print("Initialising cluster centroids...")
+        print(" \t Initialising cluster centroids...")
         km = KMeans(n_clusters=self.num_clusters, n_init=20)
-        dataloader = self.val_dataloader()
-        feature_array = None
-        self.autoencoder.model.encoder.eval()
-        for batch in dataloader:
-            data = batch[0]
-            data = data.to(self.device)
-            features = self.encode(data)
-            if feature_array is not None:
-                feature_array = np.concatenate(
-                    (feature_array, features.cpu().detach().numpy()), 0
-                )
-            else:
-                feature_array = features.cpu().detach().numpy()
-
+        feature_array = self._extract_features()
         km.fit_predict(feature_array)
         weights = torch.tensor(km.cluster_centers_, requires_grad=True)
         self.clustering_layer.set_weight(weights.to(self.device))
         self.autoencoder.model.encoder.train()
+        print("Cluster centres initialised")
 
     def _get_target_distribution(self, out_distribution):
         numerator = (out_distribution**2) / torch.sum(
@@ -127,7 +115,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         return p
 
     def _get_distributions(self, dataloader):
-
+        print("Getting target distribution.")
         cluster_distribution = None
         self.autoencoder.model.encoder.eval()
         for data in dataloader:
@@ -142,12 +130,33 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
             else:
                 cluster_distribution = clusters.cpu().detach().numpy()
 
-            # if cluster_distribution.shape[0] >= 64:
-            #     break
-
         predictions = np.argmax(cluster_distribution.data, axis=1)
         self.autoencoder.model.encoder.train()
+        print("Finished getting target distribution.")
         return torch.from_numpy(cluster_distribution), predictions
+
+    def _extract_features(self):
+        print("Extracting features.")
+        dataloader = self.val_dataloader()
+        feature_array = None
+        self.autoencoder.model.encoder.eval()
+        for batch in dataloader:
+            data = batch[0]
+            data = data.to(self.device)
+            features = self.encode(data)
+            if feature_array is not None:
+                feature_array = np.concatenate(
+                    (feature_array, features.cpu().detach().numpy()), 0
+                )
+            else:
+                feature_array = features.cpu().detach().numpy()
+
+        print("Done extracting features.")
+
+        return feature_array
+
+    def on_train_start(self) -> None:
+        self._initialise_centroid()
 
     def training_step(self, batch, batch_idx):
         batch_num = batch_idx + 1
@@ -155,9 +164,6 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
             (self.current_epoch == 0)
             or (self.current_epoch % self.args.update_interval == 0)
         ) and (batch_num == 1):
-            print("Initialising centroids.")
-            self._initialise_centroid()
-            print("Initialising target distribution.")
             (
                 cluster_distribution,
                 previous_cluster_predictions,
