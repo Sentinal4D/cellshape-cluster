@@ -11,6 +11,14 @@ from tqdm import tqdm
 class DeepEmbeddedClusteringPL(pl.LightningModule):
     def __init__(self, autoencoder, num_clusters, dataset, args):
         super(DeepEmbeddedClusteringPL, self).__init__()
+        self.save_hyperparameters(
+            ignore=[
+                "reconstruction_criterion",
+                "autoencoder",
+                "cluster_criterion",
+                "dataset",
+            ]
+        )
         self.autoencoder = autoencoder
         self.num_clusters = num_clusters
         self.clustering_layer = ClusteringLayer(
@@ -58,7 +66,10 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
 
     def train_dataloader(self):
         return DataLoader(
-            self.dataset, batch_size=self.args.batch_size, shuffle=False
+            self.dataset,
+            batch_size=self.args.batch_size,
+            shuffle=False,
+            num_workers=24,
         )
         # it is very important that shuffle=False here!
 
@@ -92,7 +103,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         dataloader = self.val_dataloader()
         feature_array = None
         self.autoencoder.model.encoder.eval()
-        for batch in dataloader:
+        for batch in tqdm(dataloader):
             data = batch[0]
             data = data.to(self.device)
             features = self.encode(data)
@@ -104,7 +115,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
                 feature_array = features.cpu().detach().numpy()
 
         km.fit_predict(feature_array)
-        weights = torch.from_numpy(km.cluster_centers_, requires_grad=True)
+        weights = torch.tensor(km.cluster_centers_, requires_grad=True)
         self.clustering_layer.set_weight(weights.to(self.device))
         self.autoencoder.model.encoder.train()
 
@@ -165,12 +176,15 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         cluster_loss = self.cluster_criterion(torch.log(clusters), tar_dist)
         loss = reconstruction_loss + (self.args.gamma * cluster_loss)
 
-        self.log_dict(
-            {
-                "loss": loss,
-                "recon_loss": reconstruction_loss,
-                "cluster_loss": cluster_loss,
-            }
-        )
+        # self.log_dict(
+        #     {
+        #         "loss": loss,
+        #         "recon_loss": reconstruction_loss,
+        #         "cluster_loss": cluster_loss,
+        #     }
+        # )
+        self.log("loss", loss, prog_bar=True)
+        self.log("recon_loss", reconstruction_loss, prog_bar=True)
+        self.log("cluster_loss", cluster_loss, prog_bar=True)
 
         return loss
