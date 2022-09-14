@@ -5,7 +5,6 @@ from .clustering_layer import ClusteringLayer
 import numpy as np
 from sklearn.cluster import KMeans
 from cellshape_cloud.vendor.chamfer_distance import ChamferLoss
-from tqdm import tqdm
 
 
 class DeepEmbeddedClusteringPL(pl.LightningModule):
@@ -103,7 +102,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         dataloader = self.val_dataloader()
         feature_array = None
         self.autoencoder.model.encoder.eval()
-        for batch in tqdm(dataloader):
+        for batch in dataloader:
             data = batch[0]
             data = data.to(self.device)
             features = self.encode(data)
@@ -130,7 +129,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
 
         cluster_distribution = None
         self.autoencoder.model.encoder.eval()
-        for data in tqdm(dataloader):
+        for data in dataloader:
             inputs = data[0]
             inputs = inputs.to(self.device)
             z = self.encode(inputs)
@@ -141,6 +140,9 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
                 )
             else:
                 cluster_distribution = clusters.cpu().detach().numpy()
+
+            # if cluster_distribution.shape[0] >= 64:
+            #     break
 
         predictions = np.argmax(cluster_distribution.data, axis=1)
         self.autoencoder.model.encoder.train()
@@ -183,8 +185,8 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         #         "cluster_loss": cluster_loss,
         #     }
         # )
-        self.log("loss", loss, prog_bar=True)
-        self.log("recon_loss", reconstruction_loss, prog_bar=True)
-        self.log("cluster_loss", cluster_loss, prog_bar=True)
+        self.log("loss", loss)
+        self.log("recon_loss", reconstruction_loss)
+        self.log("cluster_loss", cluster_loss)
 
         return loss

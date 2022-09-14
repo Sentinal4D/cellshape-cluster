@@ -90,7 +90,8 @@ def train_dec_pl(args):
         max_epochs=args.num_epochs_clustering,
         default_root_dir=new_output + logging_info[3],
         callbacks=[checkpoint_callback],
-        strategy="ddp_find_unused_parameters_false",
+        # strategy="ddp_find_unused_parameters_false",
+        log_every_n_steps=1,
     )
 
     trainer.fit(model)
