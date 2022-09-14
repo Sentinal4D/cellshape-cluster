@@ -5,6 +5,7 @@ from .clustering_layer import ClusteringLayer
 import numpy as np
 from sklearn.cluster import KMeans
 from cellshape_cloud.vendor.chamfer_distance import ChamferLoss
+from tqdm import tqdm
 
 
 class DeepEmbeddedClusteringPL(pl.LightningModule):
@@ -103,7 +104,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
                 feature_array = features.cpu().detach().numpy()
 
         km.fit_predict(feature_array)
-        weights = torch.from_numpy(km.cluster_centers_)
+        weights = torch.from_numpy(km.cluster_centers_, requires_grad=True)
         self.clustering_layer.set_weight(weights.to(self.device))
         self.autoencoder.model.encoder.train()
 
@@ -111,14 +112,14 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         numerator = (out_distribution**2) / torch.sum(
             out_distribution, axis=0
         )
-        p = numerator.t() / np.sum(numerator, axis=1)
+        p = (numerator.t() / torch.sum(numerator, axis=1)).t()
         return p
 
     def _get_distributions(self, dataloader):
 
         cluster_distribution = None
         self.autoencoder.model.encoder.eval()
-        for data in dataloader:
+        for data in tqdm(dataloader):
             inputs = data[0]
             inputs = inputs.to(self.device)
             z = self.encode(inputs)
@@ -132,14 +133,15 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
 
         predictions = np.argmax(cluster_distribution.data, axis=1)
         self.autoencoder.model.encoder.train()
-        return cluster_distribution, predictions
+        return torch.from_numpy(cluster_distribution), predictions
 
     def training_step(self, batch, batch_idx):
+        batch_num = batch_idx + 1
         if (self.current_epoch == 0) or (
             self.current_epoch % self.args.update_interval == 0
         ):
             print("Initialising centroids.")
-            self._initialise_centroid()
+            # self._initialise_centroid()
             print("Initialising target distribution.")
             (
                 cluster_distribution,
@@ -151,12 +153,11 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
 
         inputs = batch[0]
         batch_size = inputs.shape[0]
-        tar_dist = torch.from_numpy(
-            target_distribution[
-                ((batch_idx - 1) * batch_size) : (batch_idx * batch_size),
-                :,
-            ]
-        )
+        tar_dist = target_distribution[
+            ((batch_num - 1) * batch_size) : (batch_num * batch_size),
+            :,
+        ].to(self.device)
+
         features = self.encode(inputs)
         clusters = self.cluster(features)
         outputs = self.decode(features)
