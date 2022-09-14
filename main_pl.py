@@ -21,20 +21,24 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 from torch import Tensor
+from matplotlib import pyplot as plt
 
 
 def make_umap(pl_module, trainer):
     print("Creating UMAP figure.")
     feature_array = pl_module._extract_features()
     scalar = StandardScaler()
-    scaled_features = scalar.fit_transform(feature_array)
+    cluster_centres = pl_module.clustering_layer.weight.detach().cpu().numpy()
+    features_and_clus = np.concatenate((feature_array, cluster_centres), 0)
+    scaled_features = scalar.fit_transform(features_and_clus)
 
     reducer = umap.UMAP(random_state=42)
     embedding = reducer.fit_transform(scaled_features)
+    num_clusters = cluster_centres.shape[0]
+    b = np.zeros((len(embedding) - num_clusters, 2))
 
-    b = np.zeros((len(embedding), 2))
-    b[:, 0] = embedding[:, 0]
-    b[:, 1] = embedding[:, 1]
+    b[:, 0] = embedding[:-num_clusters, 0]
+    b[:, 1] = embedding[:-num_clusters, 1]
 
     data = pd.DataFrame(b, columns=["Umap1", "Umap2"])
 
@@ -44,8 +48,15 @@ def make_umap(pl_module, trainer):
         y="Umap2",
         fit_reg=False,
         legend=True,
-        scatter_kws={"s": 6},
+        scatter_kws={"s": 2},
     )
+    plt.scatter(
+        x=embedding[-num_clusters:, 0],
+        y=embedding[-num_clusters:, 1],
+        color="r",
+        s=15,
+    )
+
     fig = facet.figure
     tensorboard = pl_module.logger.experiment
 
@@ -64,6 +75,9 @@ class UmapCallback(pl.callbacks.Callback):
         make_umap(pl_module, trainer)
 
     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
+        make_umap(pl_module, trainer)
+
+    def on_epoch_end(self, trainer, pl_module):
         make_umap(pl_module, trainer)
 
 
@@ -132,7 +146,9 @@ def train_dec_pl(args):
         new_output + logging_info[3] + "/lightning_logs/", exist_ok=True
     )
 
-    checkpoint_callback = ModelCheckpoint(save_top_k=1, monitor="loss")
+    checkpoint_callback = ModelCheckpoint(
+        save_top_k=1, monitor="loss", every_n_epochs=10
+    )
     umap_callback = UmapCallback()
 
     trainer = pl.Trainer(
@@ -296,7 +312,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--update_interval",
-        default=1,
+        default=10,
         type=int,
         help="How often to update the target "
         "distribution for the kl divergence.",

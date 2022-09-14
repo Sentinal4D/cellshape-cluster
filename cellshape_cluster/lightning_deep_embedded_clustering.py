@@ -150,7 +150,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
                 )
             else:
                 feature_array = features.cpu().detach().numpy()
-
+        self.autoencoder.model.train()
         print("Done extracting features.")
 
         return feature_array
@@ -185,6 +185,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         reconstruction_loss = self.reconstruction_criterion(inputs, outputs)
         cluster_loss = self.cluster_criterion(torch.log(clusters), tar_dist)
         loss = reconstruction_loss + (self.args.gamma * cluster_loss)
+        # loss = cluster_loss
 
         self.log("loss", loss)
         self.log("recon_loss", reconstruction_loss)
