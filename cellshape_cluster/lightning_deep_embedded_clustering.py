@@ -10,6 +10,7 @@ from cellshape_cloud.vendor.chamfer_distance import ChamferLoss
 class DeepEmbeddedClusteringPL(pl.LightningModule):
     def __init__(self, autoencoder, num_clusters, dataset, args):
         super(DeepEmbeddedClusteringPL, self).__init__()
+        self.target_distribution = None
         self.save_hyperparameters(
             ignore=[
                 "reconstruction_criterion",
@@ -161,13 +162,13 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
                 cluster_distribution,
                 previous_cluster_predictions,
             ) = self._get_distributions(self.val_dataloader())
-            target_distribution = self._get_target_distribution(
+            self.target_distribution = self._get_target_distribution(
                 cluster_distribution
             )
 
         inputs = batch[0]
         batch_size = inputs.shape[0]
-        tar_dist = target_distribution[
+        tar_dist = self.target_distribution[
             ((batch_num - 1) * batch_size) : (batch_num * batch_size),
             :,
         ].to(self.device)
@@ -179,13 +180,6 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         cluster_loss = self.cluster_criterion(torch.log(clusters), tar_dist)
         loss = reconstruction_loss + (self.args.gamma * cluster_loss)
 
-        # self.log_dict(
-        #     {
-        #         "loss": loss,
-        #         "recon_loss": reconstruction_loss,
-        #         "cluster_loss": cluster_loss,
-        #     }
-        # )
         self.log("loss", loss)
         self.log("recon_loss", reconstruction_loss)
         self.log("cluster_loss", cluster_loss)
