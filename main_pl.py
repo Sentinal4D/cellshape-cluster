@@ -14,6 +14,7 @@ from cellshape_cloud.cloud_autoencoder import CloudAutoEncoder
 from cellshape_cluster.lightning_deep_embedded_clustering import (
     DeepEmbeddedClusteringPL,
 )
+import os
 
 
 def train_dec_pl(args):
@@ -71,9 +72,14 @@ def train_dec_pl(args):
             model.load_model_autoencoder(args.pretrained_path)
         except Exception as e:
             print(f"Can't load pretrained network due to error {e}.")
+    new_output = args.output_dir + f"/{args.dataset_type}/"
+    os.makedirs(new_output, exist_ok=True)
 
     logging_info = get_experiment_name(
-        model=autoencoder.model, output_dir=args.output_dir
+        model=autoencoder.model, output_dir=new_output
+    )
+    os.makedirs(
+        new_output + logging_info[3] + "/lightning_logs/", exist_ok=True
     )
 
     checkpoint_callback = ModelCheckpoint(save_top_k=1, monitor="loss")
@@ -82,7 +88,7 @@ def train_dec_pl(args):
         accelerator="gpu",
         devices=args.gpus,
         max_epochs=args.num_epochs_clustering,
-        default_root_dir=args.output_dir + logging_info[3],
+        default_root_dir=new_output + logging_info[3],
         callbacks=[checkpoint_callback],
         strategy="ddp_find_unused_parameters_false",
     )
