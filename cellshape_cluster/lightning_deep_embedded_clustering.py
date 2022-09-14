@@ -150,9 +150,10 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         batch_num = batch_idx + 1
-        if (self.current_epoch == 0) or (
-            self.current_epoch % self.args.update_interval == 0
-        ):
+        if (
+            (self.current_epoch == 0)
+            or (self.current_epoch % self.args.update_interval == 0)
+        ) and (batch_num == 1):
             print("Initialising centroids.")
             self._initialise_centroid()
             print("Initialising target distribution.")
