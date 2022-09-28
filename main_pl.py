@@ -371,6 +371,12 @@ if __name__ == "__main__":
         type=str2bool,
         help="Standardize by a factor of 20?",
     )
+    parser.add_argument(
+        "--cell_component",
+        default="cell",
+        type=str,
+        help="Cell or nucleus?",
+    )
 
     arguments = parser.parse_args()
     train_dec_pl(arguments)

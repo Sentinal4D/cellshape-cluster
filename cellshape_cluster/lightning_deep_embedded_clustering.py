@@ -59,6 +59,7 @@ class DeepEmbeddedClusteringPL(pl.LightningModule):
         print("Done.")
 
     def load_lightning_dec(self, path):
+        print("loading c")
         checkpoint = torch.load(
             path, map_location=lambda storage, loc: storage
         )
