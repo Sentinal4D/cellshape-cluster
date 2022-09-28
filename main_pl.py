@@ -87,6 +87,7 @@ def train_dec_pl(args):
             args.dataframe_path,
             args.cloud_dataset_path,
             num_points=args.num_points,
+            cell_component=args.cell_component,
         )
 
     elif args.dataset_type == "GefGap":
@@ -94,6 +95,7 @@ def train_dec_pl(args):
             args.dataframe_path,
             args.cloud_dataset_path,
             norm_std=args.norm_std,
+            cell_component=args.cell_component,
         )
 
     else:
