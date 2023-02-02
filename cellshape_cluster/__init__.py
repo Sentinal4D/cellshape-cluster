@@ -5,7 +5,7 @@ from .clustering_layer import ClusteringLayer
 from .training_functions import train
 
 __all__ = (
-    'DeepEmbeddedClustering',
-    'ClusteringLayer',
-    'train',
+    "DeepEmbeddedClustering",
+    "ClusteringLayer",
+    "train",
 )
