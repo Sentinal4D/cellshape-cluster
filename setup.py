@@ -19,7 +19,7 @@ requirements = [
 
 setup(
     name="cellshape-cluster",
-    version="0.0.18-rc0",
+    version="0.0.18",
     description="3D shape analysis using deep learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
