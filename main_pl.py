@@ -2,6 +2,7 @@ import argparse
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.callbacks import ModelCheckpoint
+import pathlib
 
 from cellshape_cloud.lightning_autoencoder import CloudAutoEncoderPL
 from cellshape_cloud.pointcloud_dataset import (
@@ -14,7 +15,7 @@ from cellshape_cloud.cloud_autoencoder import CloudAutoEncoder
 from cellshape_cluster.lightning_deep_embedded_clustering import (
     DeepEmbeddedClusteringPL,
 )
-import os
+
 import umap
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
@@ -28,7 +29,9 @@ def make_umap(pl_module, trainer):
     print("Creating UMAP figure.")
     feature_array = pl_module._extract_features()
     scalar = StandardScaler()
-    cluster_centres = pl_module.clustering_layer.weight.detach().cpu().numpy()
+    cluster_centres = (
+        pl_module.clustering_layer.weight.clone().detach().cpu().numpy()
+    )
     features_and_clus = np.concatenate((feature_array, cluster_centres), 0)
     scaled_features = scalar.fit_transform(features_and_clus)
 
@@ -77,7 +80,7 @@ class UmapCallback(pl.callbacks.Callback):
     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
         make_umap(pl_module, trainer)
 
-    def on_epoch_end(self, trainer, pl_module):
+    def on_train_epoch_end(self, trainer, pl_module):
         make_umap(pl_module, trainer)
 
 
@@ -138,18 +141,24 @@ def train_dec_pl(args):
             model.load_model_autoencoder(args.pretrained_path)
         except Exception as e:
             print(f"Can't load pretrained network due to error {e}.")
+
     new_output = args.output_dir + f"/{args.dataset_type}/"
-    os.makedirs(new_output, exist_ok=True)
+    # os.makedirs(new_output, exist_ok=True)
+    print("made new output")
 
     logging_info = get_experiment_name(
         model=autoencoder.model, output_dir=new_output
     )
-    os.makedirs(
-        new_output + logging_info[3] + "/lightning_logs/", exist_ok=True
+    # os.makedirs(
+    #     new_output + logging_info[3] + "/lightning_logs/", exist_ok=True
+    # )
+    pathlib.Path(new_output + logging_info[3]).mkdir(
+        parents=True, exist_ok=True
     )
+    print(new_output + logging_info[3])
 
     checkpoint_callback = ModelCheckpoint(
-        save_top_k=1, monitor="loss", every_n_epochs=10
+        save_top_k=1, monitor="loss", every_n_epochs=1, save_last=True
     )
     umap_callback = UmapCallback()
 
@@ -226,7 +235,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--cloud_dataset_path",
-        default="/home/mvries/Documents/Datasets/OPM/" "VickyCellshape/",
+        default="/home/mvries/Documents/Datasets/OPM/" "VickyPlates_010922/",
         type=str,
         help="Please provide the path to the " "dataset of the point clouds.",
     )
@@ -249,7 +258,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--output_dir",
-        default="/home/mvries/Documents/Testing_output/",
+        default="/home/mvries/Documents/Testing_outputnew/",
         type=str,
         help="Please provide the path for where to save output.",
     )
@@ -294,14 +303,14 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--learning_rate_autoencoder",
-        default=0.0001,
+        default=100,
         type=float,
         help="Please provide the learning rate "
         "for the autoencoder training.",
     )
     parser.add_argument(
         "--learning_rate_clustering",
-        default=0.00001,
+        default=0.000001,
         type=float,
         help="Please provide the learning rate "
         "for the autoencoder training.",
@@ -378,6 +387,12 @@ if __name__ == "__main__":
         default="cell",
         type=str,
         help="Cell or nucleus?",
+    )
+    parser.add_argument(
+        "--q_power",
+        default=2,
+        type=int,
+        help="Power to take the target distribution to.",
     )
 
     arguments = parser.parse_args()

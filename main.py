@@ -230,7 +230,9 @@ if __name__ == "__main__":
     except AttributeError:
         print("Training from scratch.")
 
-    model = DeepEmbeddedClustering(autoencoder=autoencoder, num_clusters=10)
+    model = DeepEmbeddedClustering(
+        autoencoder=autoencoder, num_clusters=args.num_clusters
+    )
 
     dataset = cscloud.PointCloudDataset(args.dataset_path)
 
@@ -247,7 +249,7 @@ if __name__ == "__main__":
     )
 
     reconstruction_criterion = ChamferLoss()
-    cluster_criterion = torch.nn.KLDivLoss(reduction="sum")
+    cluster_criterion = torch.nn.KLDivLoss(reduction="batchmean")
 
     name_logging, name_model, name_writer, name = get_experiment_name(
         model=model, output_dir=args.output_dir
