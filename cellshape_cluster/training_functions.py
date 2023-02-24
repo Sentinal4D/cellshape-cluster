@@ -21,7 +21,6 @@ def train(
     divergence_tolerance,
     logging_info,
 ):
-
     name_logging, name_model, name_writer, name = logging_info
     writer = SummaryWriter(log_dir=name_writer)
 
@@ -44,7 +43,6 @@ def train(
     target_distribution = get_target_distribution(cluster_distribution)
 
     for epoch in range(num_epochs):
-
         if (epoch % update_interval == 0) and (epoch != 0):
             logging.info("Updating target distribution")
             cluster_distribution, cluster_predictions = get_distributions(
