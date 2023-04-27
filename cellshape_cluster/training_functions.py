@@ -141,7 +141,7 @@ def train(
                     "loss": total_loss,
                 }
                 best_loss = total_loss
-                torch.save(checkpoint, name_model + ".pt")
+                torch.save(checkpoint, name_model)
                 logging.info(
                     f"Saving model to {name_model} with loss = {best_loss}."
                 )
